@@ -19,8 +19,20 @@ FROM alpine:latest
 
 WORKDIR /app
 
+# Install CA certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates tzdata
+
+# Create tmp directory for temporary files
+RUN mkdir -p /app/tmp
+
 # Copy the binary from the builder stage
 COPY --from=builder /app/calendar-assistant .
+
+# Set executable permissions
+RUN chmod +x /app/calendar-assistant
+
+# Create volume for persistent data
+VOLUME ["/app/tmp"]
 
 # Run the application
 CMD ["./calendar-assistant"] 

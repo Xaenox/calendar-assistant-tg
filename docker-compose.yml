@@ -8,4 +8,16 @@ services:
     env_file:
       - .env
     volumes:
-      - ./tmp:/app/tmp 
+      - ./tmp:/app/tmp
+    # Healthcheck to ensure the bot is running properly
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "calendar-assistant"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3" 
