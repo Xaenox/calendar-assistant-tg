@@ -401,38 +401,29 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) {
 	prefs = b.getUserPreferences(userID)
 	log.Printf("Using timezone %s for user %s", prefs.Timezone, userID)
 
-	// Load the user's timezone
-	loc, err := time.LoadLocation(prefs.Timezone)
+	// Validate the timezone (but we don't need the location object)
+	_, err = time.LoadLocation(prefs.Timezone)
 	if err != nil {
 		log.Printf("Error loading timezone %s: %v, falling back to UTC", prefs.Timezone, err)
-		loc = time.UTC
+		prefs.Timezone = "UTC"
 	}
 
-	// Convert event times to user's timezone
+	// We keep the original times from GPT for display purposes
+	// The ICS generation will handle the timezone adjustment
 	log.Printf("Original UTC start time: %s", event.StartTime.Format(time.RFC3339))
 	log.Printf("Original UTC end time: %s", event.EndTime.Format(time.RFC3339))
 
-	localStartTime := event.StartTime.In(loc)
-	localEndTime := event.EndTime.In(loc)
-
-	log.Printf("Converted to timezone %s - start time: %s", prefs.Timezone, localStartTime.Format(time.RFC3339))
-	log.Printf("Converted to timezone %s - end time: %s", prefs.Timezone, localEndTime.Format(time.RFC3339))
-
 	// Determine if it's an all-day event
 	eventType := "Timed event"
-	startTimeFormat := "2006-01-02 15:04"
-	endTimeFormat := "2006-01-02 15:04"
+	timeFormat := "2006-01-02 15:04"
 
 	// Check if it's an all-day event based on the original UTC time
 	isAllDay := event.StartTime.Hour() == 0 && event.StartTime.Minute() == 0 && event.StartTime.Second() == 0
 
 	if isAllDay {
 		eventType = "All-day event"
-		startTimeFormat = "2006-01-02"
-		endTimeFormat = "2006-01-02"
-
+		timeFormat = "2006-01-02"
 		// For all-day events, we want to show the date without time
-		// regardless of the timezone conversion
 		log.Println("All-day event detected, using date-only format")
 	}
 
@@ -462,13 +453,29 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) {
 	log.Println("Sending ICS file...")
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FilePath(tempFile))
 
-	doc.Caption = fmt.Sprintf("%s: %s\nStart: %s\nEnd: %s\nLocation: %s\nTimezone: %s\n\n📱 iPhone users: Use this shortcut for easy calendar import:\nhttps://www.icloud.com/shortcuts/db9d3a471c414a1abd2ba7b960395bee",
-		eventType,
-		event.Title,
-		localStartTime.Format(startTimeFormat),
-		localEndTime.Format(endTimeFormat),
-		event.Location,
-		b.formatTimezoneForDisplay(prefs.Timezone))
+	// Format the caption with the original times but user's timezone label
+	// This ensures what the user sees in the message matches what they'll see in their calendar
+	var caption string
+	if isAllDay {
+		caption = fmt.Sprintf("%s: %s\nDate: %s\nLocation: %s\nTimezone: %s\n\n📱 iPhone users: Use this shortcut for easy calendar import:\nhttps://www.icloud.com/shortcuts/db9d3a471c414a1abd2ba7b960395bee",
+			eventType,
+			event.Title,
+			event.StartTime.Format("2006-01-02"),
+			event.Location,
+			b.formatTimezoneForDisplay(prefs.Timezone))
+	} else {
+		caption = fmt.Sprintf("%s: %s\nStart: %s %s\nEnd: %s %s\nLocation: %s\nTimezone: %s\n\n📱 iPhone users: Use this shortcut for easy calendar import:\nhttps://www.icloud.com/shortcuts/db9d3a471c414a1abd2ba7b960395bee",
+			eventType,
+			event.Title,
+			event.StartTime.Format(timeFormat),
+			b.formatTimezoneForDisplay(prefs.Timezone),
+			event.EndTime.Format(timeFormat),
+			b.formatTimezoneForDisplay(prefs.Timezone),
+			event.Location,
+			b.formatTimezoneForDisplay(prefs.Timezone))
+	}
+
+	doc.Caption = caption
 	doc.ReplyToMessageID = messageID // Reply to the original message
 
 	// Delete the processing message
