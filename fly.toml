@@ -1,5 +1,5 @@
 app = "calendar-assistant"
-primary_region = "iad" # Change this to your preferred region
+primary_region = "arn" # Change this to your preferred region
 kill_signal = "SIGINT"
 kill_timeout = 5
 
@@ -10,7 +10,7 @@ kill_timeout = 5
   # Environment variables will be set through the Fly.io secrets
 
 [mounts]
-  source = "calendar_assistant_data"
+  source = "calendar_assistant_tmp_data"
   destination = "/app/tmp"
 
 [http_service]
