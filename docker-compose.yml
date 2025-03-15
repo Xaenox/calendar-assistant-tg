@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  calendar-assistant:
+    build: .
+    container_name: calendar-assistant
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./tmp:/app/tmp 
