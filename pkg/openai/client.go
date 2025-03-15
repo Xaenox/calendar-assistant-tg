@@ -118,22 +118,16 @@ func (c *Client) InitializeAssistant(ctx context.Context) error {
 	}
 
 	return nil
+}
 
-	// // If not found, create a new assistant
-	// instructions := "You are a calendar assistant that extracts event information from text or images. Always respond with JSON containing title, description, location, start_time, and end_time fields. The start_time and end_time MUST be in RFC3339 format (e.g., '2023-04-15T14:30:00Z')."
-	// model := openai.ChatModel("gpt-4o")
-	// assistant, err := c.client.Beta.Assistants.New(ctx, openai.BetaAssistantNewParams{
-	// 	Name:         openai.F(c.assistantName),
-	// 	Model:        openai.F(model),
-	// 	Instructions: openai.F(instructions),
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create assistant: %w", err)
-	// }
-
-	// c.assistantID = assistant.ID
-	// fmt.Printf("Created new assistant with ID: %s\n", c.assistantID)
-	// return nil
+// formatCurrentDate returns the current date in a user-friendly format
+func formatCurrentDate() string {
+	now := time.Now()
+	return fmt.Sprintf("%s, %s %d, %d",
+		now.Weekday().String(),
+		now.Month().String(),
+		now.Day(),
+		now.Year())
 }
 
 // ExtractEventFromText extracts event information from text
@@ -149,6 +143,12 @@ func (c *Client) ExtractEventFromText(ctx context.Context, userID string, text s
 		return nil, err
 	}
 
+	// Add current date information to the message
+	currentDate := formatCurrentDate()
+	messageText := fmt.Sprintf("Today is %s. Please extract event information from the following text:\n\n%s", currentDate, text)
+
+	fmt.Printf("Sending message with current date: %s\n", currentDate)
+
 	// Add a message to the thread
 	role := openai.BetaThreadMessageNewParamsRoleUser
 	_, err = c.client.Beta.Threads.Messages.New(ctx, threadID, openai.BetaThreadMessageNewParams{
@@ -156,7 +156,7 @@ func (c *Client) ExtractEventFromText(ctx context.Context, userID string, text s
 		Content: openai.F([]openai.MessageContentPartParamUnion{
 			openai.TextContentBlockParam{
 				Type: openai.F(openai.TextContentBlockParamTypeText),
-				Text: openai.String(text),
+				Text: openai.String(messageText),
 			},
 		}),
 	})
@@ -233,13 +233,19 @@ func (c *Client) ExtractEventFromImage(ctx context.Context, userID string, image
 	role := openai.BetaThreadMessageNewParamsRoleUser
 	fmt.Println("Creating message with image content...")
 
+	// Add current date information to the message
+	currentDate := formatCurrentDate()
+	messageText := fmt.Sprintf("Today is %s. Please extract event information from this image.", currentDate)
+
+	fmt.Printf("Sending message with current date: %s\n", currentDate)
+
 	// Create the message with image content
 	message, err := c.client.Beta.Threads.Messages.New(ctx, threadID, openai.BetaThreadMessageNewParams{
 		Role: openai.F(role),
 		Content: openai.F([]openai.MessageContentPartParamUnion{
 			openai.TextContentBlockParam{
 				Type: openai.F(openai.TextContentBlockParamTypeText),
-				Text: openai.F("Please extract event information from this image."),
+				Text: openai.F(messageText),
 			},
 			openai.ImageFileContentBlockParam{
 				Type: openai.F(openai.ImageFileContentBlockTypeImageFile),
