@@ -44,6 +44,60 @@ A Telegram bot that extracts event information from text or images and creates c
    ./calendar-assistant
    ```
 
+### Deployment Options
+
+#### Local Deployment
+
+Run the bot locally using the provided Makefile:
+```
+make run
+```
+
+#### Docker Deployment
+
+Deploy using Docker Compose:
+```
+make docker-compose
+```
+
+#### Fly.io Deployment
+
+Deploy to Fly.io for a cloud-hosted solution:
+
+1. Install the Fly.io CLI:
+   ```
+   # On macOS/Linux
+   curl -L https://fly.io/install.sh | sh
+   
+   # On Windows
+   iwr https://fly.io/install.ps1 -useb | iex
+   ```
+
+2. Login to Fly.io:
+   ```
+   flyctl auth login
+   ```
+
+3. Deploy the application:
+   ```
+   make deploy-fly
+   ```
+
+   This will:
+   - Create a persistent volume for your data
+   - Set up your environment variables as secrets
+   - Deploy the application to Fly.io
+
+4. Check the status of your deployment:
+   ```
+   flyctl status
+   ```
+
+5. View logs:
+   ```
+   flyctl logs
+   ```
+
 ## Usage
 
 1. Start a chat with your bot on Telegram

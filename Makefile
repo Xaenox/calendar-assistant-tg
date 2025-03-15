@@ -1,4 +1,4 @@
-.PHONY: build run clean docker docker-run setup test
+.PHONY: build run clean docker docker-run setup test deploy-fly
 
 # Build the application
 build:
@@ -33,6 +33,16 @@ setup:
 		setup.bat; \
 	else \
 		echo "No setup script found"; \
+	fi
+
+# Deploy to Fly.io
+deploy-fly:
+	@if [ -f deploy-fly.sh ]; then \
+		chmod +x deploy-fly.sh && ./deploy-fly.sh; \
+	elif [ -f deploy-fly.bat ]; then \
+		deploy-fly.bat; \
+	else \
+		echo "No deployment script found"; \
 	fi
 
 # Run tests
